@@ -1,4 +1,4 @@
-[[
+--[[
  / Script created by @xMD + Man
  / Discord (1xmd)
 
@@ -8,14 +8,16 @@
  https://github.com/1Lorenzo-1/mta-browsers
 ]]
 
+
 local screen = Vector2(guiGetScreenSize())
 local Browser
 local browsersCounts = 0
 local browsers = {}
 local elements_resources = {} 
+local dxBrowser = createBrowser
 
 function Constructor()
-    Browser = guiCreateBrowser (0, 0, screen.x, screen.y, true, true)
+    Browser = dxBrowser(screen.x,screen.y,true,true)
 
     addEventHandler('onClientBrowserLoadingFailed', Browser, function()
         Constructor()
@@ -23,15 +25,40 @@ function Constructor()
 
     addEventHandler('onClientBrowserCreated', Browser, function()
         loadBrowserURL(source, 'http://mta/BetterBrowsers')
-        Browser = source
         executeBrowserJavascript(source, [[
             document.addEventListener("DOMContentLoaded", function() {
                 document.body.innerHTML = "";
                 document.body.style.overflow = "hidden";             
             });            
         ]]);
+        focusBrowser(Browser)
+    end)
+
+    addEventHandler("onClientRender",root,function()
+        dxDrawImage ( 0,0,screen.x,screen.y, Browser)
+    end)
+
+    addEventHandler("onClientClick", root,function(button, state)
+        if state == "down" then
+            injectBrowserMouseDown(Browser, button)
+        else
+            injectBrowserMouseUp(Browser, button)
+        end 
+    end)
+
+    addEventHandler("onClientKey", root, function(button)
+        if button == "mouse_wheel_down" then
+            injectBrowserMouseWheel(Browser, -40, 0)
+        elseif button == "mouse_wheel_up" then
+            injectBrowserMouseWheel(Browser, 40, 0)
+        end
+    end)
+
+    addEventHandler("onClientCursorMove", root,function (relativeX, relativeY, absoluteX, absoluteY)
+        injectBrowserMouseMove(Browser, absoluteX, absoluteY)
     end)
 end
+
 
 function readFile(path)
     local file = fileOpen(path) 
@@ -70,6 +97,7 @@ end
 
 function loadBrowserFiles(theBrowser, files)
     assert(isElement(theBrowser) , "Bad argument 1 @ loadBrowserFiles (element expected, got " .. type(theBrowser) .. ")")
+    
     if not browsers[theBrowser] then 
         return false, 'invalid browser / create new one'
     end 
@@ -97,7 +125,7 @@ function loadBrowserFiles(theBrowser, files)
 
     local thePath = getResourceName(sourceResource)..'/'..htmlFile	
     if not fileExists (':'..thePath) then 
-        outputDebugString(" invalid path provided for file:"..file,2)
+        outputDebugString(" invalid path provided for file: "..thePath,2)
     end 
 
     local jsCode = [[
@@ -126,6 +154,7 @@ function loadBrowserFiles(theBrowser, files)
 
         document.body.appendChild(iframe);
     ]]
+
 
     executeBrowserJavascript(Browser, jsCode)
     toLoad = {}
