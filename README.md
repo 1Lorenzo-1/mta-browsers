@@ -20,14 +20,19 @@ exports.BetterBrowser:loadBrowserFiles(theBrowser, {
     -- Note: Including CSS/JS files here may impact performance; consider embedding in HTML
 })
 
+-- Add an event to know when the browser is fully loaded
+addEventHandler("onBrowserLoad", theBrowser, function()
+    iprint("The browser has been loaded!")
+    -- Important: The function (exports.BetterBrowser:executeJavascript) won't work correctly until the browser has loaded.
+end)
+
+
 -- Example event triggered when a button is clicked, changing its text to 'pressed'
 addEvent("pressed_the_button", true)
 addEventHandler("pressed_the_button", root, function()
     -- Execute JavaScript code in the browser to change button text when clicked
     exports.BetterBrowser:executeJavascript(theBrowser, [[
-        document.getElementById("theButton").addEventListener("click", function() {
-            this.innerHTML = "pressed";
-        });
+        document.getElementById("theButton").innerHTML = "pressed"
     ]])
 end)
 
