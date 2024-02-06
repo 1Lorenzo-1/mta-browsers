@@ -8,6 +8,8 @@
  https://github.com/1Lorenzo-1/mta-browsers
 ]]
 
+addEvent("better-browsers:loaded", true)
+addEvent("onBrowserLoad", true)
 
 local screen = Vector2(guiGetScreenSize())
 local Browser
@@ -15,6 +17,7 @@ local browsersCounts = 0
 local browsers = {}
 local elements_resources = {} 
 local dxBrowser = createBrowser
+local MTAFocus = focusBrowser
 
 function Constructor()
     Browser = dxBrowser(screen.x,screen.y,true,true)
@@ -28,14 +31,14 @@ function Constructor()
         executeBrowserJavascript(source, [[
             document.addEventListener("DOMContentLoaded", function() {
                 document.body.innerHTML = "";
-                document.body.style.overflow = "hidden";             
-            });            
+                document.body.style.overflow = "hidden";   
+            });          
         ]]);
-        focusBrowser(Browser)
+        MTAFocus(Browser)
     end)
 
     addEventHandler("onClientRender",root,function()
-        dxDrawImage ( 0,0,screen.x,screen.y, Browser)
+        dxDrawImage ( 0,0,screen.x,screen.y, Browser,0,0,0, tocolor(255,255,255), true)
     end)
 
     addEventHandler("onClientClick", root,function(button, state)
@@ -57,8 +60,31 @@ function Constructor()
     addEventHandler("onClientCursorMove", root,function (relativeX, relativeY, absoluteX, absoluteY)
         injectBrowserMouseMove(Browser, absoluteX, absoluteY)
     end)
+
+    addEventHandler("better-browsers:loaded", root,function (id)
+        for element, loaded in pairs(browsers) do 
+            if tonumber(loaded.id) == tonumber(id) then 
+                if isElement(element) then 
+                    triggerEvent("onBrowserLoad", element)
+                end 
+                break
+            end 
+        end 
+    end)
 end
 
+function focusBrowser(theBrowser)
+    assert(isElement(theBrowser), "Bad argument 1 @ createBrowser (browser-element expected, got " .. type(theBrowser) .. ")")
+
+    if browsers[theBrowser] then 
+        executeBrowserJavascript(Browser, [[
+            var iframe = document.getElementById(']].. browsers[theBrowser].id ..[[');
+            if (iframe) {
+                iframe.focus();
+            }
+        ]])
+    end 
+end 
 
 function readFile(path)
     local file = fileOpen(path) 
@@ -150,6 +176,8 @@ function loadBrowserFiles(theBrowser, files)
             var script = iframe.contentDocument.createElement('script');
             script.textContent = ']].. (toLoad["js"] or "") ..[[';
             iframe.contentDocument.body.appendChild(script);
+
+            mta.triggerEvent("better-browsers:loaded", ']].. id ..[[')
         };
 
         document.body.appendChild(iframe);
