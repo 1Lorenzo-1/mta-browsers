@@ -32,7 +32,21 @@ function Constructor()
             document.addEventListener("DOMContentLoaded", function() {
                 document.body.innerHTML = "";
                 document.body.style.overflow = "hidden";   
-            });          
+            });      
+
+            function sortIframesByZIndex() {
+                var iframes = document.getElementsByTagName('iframe');
+                var iframeArray = Array.from(iframes);
+                iframeArray.sort(function(a, b) {
+                    var zIndexA = parseInt(window.getComputedStyle(a).zIndex) || 0;
+                    var zIndexB = parseInt(window.getComputedStyle(b).zIndex) || 0;
+                    return zIndexA - zIndexB;
+                });
+                iframeArray.forEach(function(iframe, index) {
+                    document.body.appendChild(iframe);
+                });
+            }   
+
         ]]);
         MTAFocus(Browser)
     end)
@@ -85,6 +99,24 @@ function focusBrowser(theBrowser)
         ]])
     end 
 end 
+
+function setBrowserProperty(theBrowser, propertys) 
+    assert(isElement(theBrowser), "Bad argument 1 @ createBrowser (browser-element expected, got " .. type(theBrowser) .. ")")
+    assert(type(propertys)=="table", "Bad argument 1 @ createBrowser (table expected, got " .. type(propertys) .. ")")
+
+    if browsers[theBrowser] then 
+        if propertys and propertys.zIndex then 
+            assert(type(propertys.zIndex)=="number", "Bad argument 1 @ createBrowser (number expected, got " .. type(propertys) .. ")")
+
+            executeBrowserJavascript(Browser, [[
+                var iframe = document.getElementById(']].. browsers[theBrowser].id ..[[');
+                if (iframe) {
+                    iframe.style.zIndex = ']]..propertys.zIndex..[[';
+                }
+            ]])
+        end 
+    end 
+end
 
 function readFile(path)
     local file = fileOpen(path) 
@@ -182,7 +214,6 @@ function loadBrowserFiles(theBrowser, files)
 
         document.body.appendChild(iframe);
     ]]
-
 
     executeBrowserJavascript(Browser, jsCode)
     toLoad = {}
