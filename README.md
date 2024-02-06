@@ -21,9 +21,14 @@ exports.BetterBrowser:loadBrowserFiles(theBrowser, {
 })
 
 -- Add an event to know when the browser is fully loaded
+-- Important: The function (exports.BetterBrowser:executeJavascript) won't work correctly until the browser has loaded.
 addEventHandler("onBrowserLoad", theBrowser, function()
     iprint("The browser has been loaded!")
-    -- Important: The function (exports.BetterBrowser:executeJavascript) won't work correctly until the browser has loaded.
+
+    -- Set the browser's z-index. Sometimes, elements that are obscured by other elements in HTML (e.g., a button behind an image) cannot be accessed. Setting the z-index higher ensures proper interaction.
+     exports.BetterBrowser:setBrowserProperty(theBrowser, {
+         zIndex=999,
+      })
 end)
 
 
