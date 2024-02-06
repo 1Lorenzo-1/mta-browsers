@@ -33,20 +33,6 @@ function Constructor()
                 document.body.innerHTML = "";
                 document.body.style.overflow = "hidden";   
             });      
-
-            function sortIframesByZIndex() {
-                var iframes = document.getElementsByTagName('iframe');
-                var iframeArray = Array.from(iframes);
-                iframeArray.sort(function(a, b) {
-                    var zIndexA = parseInt(window.getComputedStyle(a).zIndex) || 0;
-                    var zIndexB = parseInt(window.getComputedStyle(b).zIndex) || 0;
-                    return zIndexA - zIndexB;
-                });
-                iframeArray.forEach(function(iframe, index) {
-                    document.body.appendChild(iframe);
-                });
-            }   
-
         ]]);
         MTAFocus(Browser)
     end)
