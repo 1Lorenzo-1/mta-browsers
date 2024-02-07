@@ -16,7 +16,6 @@ addEvent("onBrowserLoad", true)
 local browserLoaded = false 
 local screen = Vector2(guiGetScreenSize())
 local Browser
-local browsersCounts = 0
 local browsers = {}
 local elements_resources = {} 
 local dxBrowser = createBrowser
@@ -143,10 +142,16 @@ function createBrowser(width, height)
     assert(tonumber(height), "Bad argument 2 @ createBrowser (number expected, got " .. type(height) .. ")")
 
     local newElement = createElement("better-browser")
-    browsersCounts = browsersCounts + 1
+    
+    local newId = 1
+    for _, browser in pairs(browsers) do 
+        if browser.id >= newId then 
+            newId = browser.id + 1
+        end 
+    end
 
     browsers[newElement] = {
-        id = browsersCounts,
+        id = newId,
         width = width,
         height = height,
     }
