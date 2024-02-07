@@ -12,22 +12,22 @@ addEvent("better-browsers:loaded", false)
 addEvent("better-browsers:page-loaded", false)
 addEvent("onBrowserLoad", false)
 
+local SW, SH = guiGetScreenSize()
+local dxBrowser = createBrowser
+local MTAFocus = focusBrowser
 
 local browserLoaded = false 
-local screen = Vector2(guiGetScreenSize())
 local Browser
 local browsers = {}
 local elements_resources = {} 
-local dxBrowser = createBrowser
-local MTAFocus = focusBrowser
 local toLoadBrowsers = {}
 
-function Constructor()
-    Browser = dxBrowser(screen.x,screen.y,true,true)
+local function Constructor()
+    Browser = dxBrowser(SW,SH,true,true)
 
     addEventHandler('onClientBrowserLoadingFailed', Browser, function()
         Constructor()
-    end)
+    end, false)
 
     addEventHandler('onClientBrowserCreated', Browser, function()
         loadBrowserURL(source, 'http://mta/BetterBrowsers')
@@ -39,44 +39,45 @@ function Constructor()
             });      
         ]]);
         MTAFocus(Browser)
-    end)
+    end, false)
 
-    addEventHandler("onClientRender",root,function()
-        dxDrawImage ( 0,0,screen.x,screen.y, Browser,0,0,0, tocolor(255,255,255), true)
-    end)
+    addEventHandler("onClientRender", root, function()
+        dxDrawImage (0,0,SW,SH, Browser,0,0,0, tocolor(255,255,255), true)
+    end, false)
 
-    addEventHandler("onClientClick", root,function(button, state)
+    addEventHandler("onClientClick", root, function(button, state)
         if state == "down" then
             injectBrowserMouseDown(Browser, button)
         else
             injectBrowserMouseUp(Browser, button)
         end 
-    end)
+    end, false)
 
-    addEventHandler("onClientKey", root, function(button)
+    addEventHandler("onClientKey", root, function(button, pressed)
+        if (not pressed) then return end -- only inject when pressed down
         if button == "mouse_wheel_down" then
             injectBrowserMouseWheel(Browser, -40, 0)
         elseif button == "mouse_wheel_up" then
             injectBrowserMouseWheel(Browser, 40, 0)
         end
-    end)
+    end, false)
 
-    addEventHandler("onClientCursorMove", root,function (relativeX, relativeY, absoluteX, absoluteY)
+    addEventHandler("onClientCursorMove", root, function(relativeX, relativeY, absoluteX, absoluteY)
         injectBrowserMouseMove(Browser, absoluteX, absoluteY)
-    end)
+    end, false)
 
-    addEventHandler("better-browsers:loaded", root,function (id)
+    addEventHandler("better-browsers:loaded", root, function(id)
         for element, loaded in pairs(browsers) do 
             if tonumber(loaded.id) == tonumber(id) then 
                 if isElement(element) then 
                     triggerEvent("onBrowserLoad", element)
                 end 
-                break
+                return
             end 
         end 
     end)
 
-    addEventHandler("better-browsers:page-loaded", root,function ()
+    addEventHandler("better-browsers:page-loaded", root, function()
         browserLoaded = true
     
         for id, js in pairs(toLoadBrowsers) do 
@@ -93,8 +94,28 @@ function Constructor()
         end 
         toLoadBrowsers  = {}
     end)
-end
 
+    addEventHandler("onClientElementDestroy", root, function()
+        if getElementType(source) == "better-browser" and browsers[source] and isElement(Browser) then 
+            executeBrowserJavascript(Browser, "document.getElementById('"..browsers[source].id.."').remove();")
+            browsers[source] = nil
+        end     
+    end)
+    
+    addEventHandler("onClientResourceStop", root, function(res)
+        if elements_resources[res] and isElement(Browser) then
+            for _, element in pairs(elements_resources[res]) do 
+                if browsers[element] and isElement(element) then 
+                    executeBrowserJavascript(Browser, "document.getElementById('"..browsers[element].id.."').remove();")
+                    browsers[element] = nil
+                end
+            end 
+        end 
+    end)
+end
+addEventHandler("onClientResourceStart", resourceRoot, Constructor, false)
+
+-- Exported --
 function focusBrowser(theBrowser)
     assert(isElement(theBrowser), "Bad argument 1 @ createBrowser (browser-element expected, got " .. type(theBrowser) .. ")")
 
@@ -105,38 +126,29 @@ function focusBrowser(theBrowser)
                 iframe.focus();
             }
         ]])
-    end 
-end 
+    end
+end
 
-function setBrowserProperty(theBrowser, propertys) 
+-- Exported --
+function setBrowserProperty(theBrowser, properties) 
     assert(isElement(theBrowser), "Bad argument 1 @ createBrowser (browser-element expected, got " .. type(theBrowser) .. ")")
-    assert(type(propertys)=="table", "Bad argument 1 @ createBrowser (table expected, got " .. type(propertys) .. ")")
+    assert(type(properties)=="table", "Bad argument 1 @ createBrowser (table expected, got " .. type(properties) .. ")")
 
     if browsers[theBrowser] then 
-        if propertys and propertys.zIndex then 
-            assert(type(propertys.zIndex)=="number", "Bad argument 1 @ createBrowser (number expected, got " .. type(propertys) .. ")")
+        if properties.zIndex then 
+            assert(type(properties.zIndex)=="number", "Bad argument 1 @ createBrowser (number expected, got " .. type(properties) .. ")")
 
             executeBrowserJavascript(Browser, [[
                 var iframe = document.getElementById(']].. browsers[theBrowser].id ..[[');
                 if (iframe) {
-                    iframe.style.zIndex = ']]..propertys.zIndex..[[';
+                    iframe.style.zIndex = ']]..properties.zIndex..[[';
                 }
             ]])
         end 
     end 
 end
 
-function readFile(path)
-    local file = fileOpen(path) 
-    if not file then
-        return "" 
-    end
-    local count = fileGetSize(file) 
-    local data = fileRead(file, count) 
-    fileClose(file)
-    return data
-end
-
+-- Exported --
 function createBrowser(width, height)
     assert(tonumber(width), "Bad argument 1 @ createBrowser (number expected, got " .. type(width) .. ")")
     assert(tonumber(height), "Bad argument 2 @ createBrowser (number expected, got " .. type(height) .. ")")
@@ -157,18 +169,31 @@ function createBrowser(width, height)
     }
 
 
-    setElementParent(newElement,getResourceDynamicElementRoot(sourceResource) )
+    setElementParent(newElement, getResourceDynamicElementRoot(sourceResource))
 
     if not elements_resources[sourceResource] then 
         elements_resources[sourceResource] = {}
     end 
-    table.insert(elements_resources[sourceResource], newElement)
+    elements_resources[#elements_resources+1] = newElement
     
     return newElement
-end     
+end
 
+local function readFile(path)
+    local file = fileOpen(path) 
+    if not file then
+        return "" 
+    end
+    local count = fileGetSize(file) 
+    local data = fileRead(file, count) 
+    fileClose(file)
+    return data
+end   
+
+-- Exported --
 function loadBrowserFiles(theBrowser, files)
     assert(isElement(theBrowser) , "Bad argument 1 @ loadBrowserFiles (element expected, got " .. type(theBrowser) .. ")")
+    assert(type(files)=="table", "Bad argument 2 @ loadBrowserFiles (table expected, got " .. type(files) .. ")")
     
     if not browsers[theBrowser] then 
         return false, 'invalid browser / create new one'
@@ -179,14 +204,14 @@ function loadBrowserFiles(theBrowser, files)
     local toLoad = {}
 
     if files.css then
-        for _, cssFile in ipairs(files.css) do
+        for _, cssFile in pairs(files.css) do
             local cssPath = ':'..getResourceName(sourceResource)..'/'..cssFile
             toLoad["css"] = (toLoad["css"] or "") .. readFile(cssPath):gsub("['\n\r]", {["'"] = "\\'", ["\n"] = "\\n", ["\r"] = "\\r"})
         end
     end
 
     if files.js then
-        for _, jsFile in ipairs(files.js) do
+        for _, jsFile in pairs(files.js) do
             local jsPath = ':'..getResourceName(sourceResource)..'/'..jsFile
             toLoad["js"] = (toLoad["js"] or "") .. readFile(jsPath):gsub("['\n\r]", {["'"] = "\\'", ["\n"] = "\\n", ["\r"] = "\\r"})
         end
@@ -239,9 +264,14 @@ function loadBrowserFiles(theBrowser, files)
     return true 
 end 
 
+-- Exported --
 function executeJavascript(theBrowser, js)
     assert(isElement(theBrowser) , "Bad argument 1 @ executeJavascript (element expected, got " .. type(theBrowser) .. ")")
     assert(type(js)=="string", "Bad argument 2 @ executeJavascript (string expected, got " .. type(js) .. ")")
+
+    if not browsers[theBrowser] then 
+        return false, 'invalid browser / create new one'
+    end 
 
     local iframeId = browsers[theBrowser].id
     if iframeId then 
@@ -253,25 +283,3 @@ function executeJavascript(theBrowser, js)
         ]])    
     end 
 end 
-
-addEventHandler("onClientElementDestroy", getRootElement(), function ()
-	if getElementType(source) == "better-browser" and browsers[source] and isElement(Browser) then 
-        executeBrowserJavascript(Browser, "document.getElementById('"..browsers[source].id.."').remove();")
-        browsers[source] = nil
-    end     
-end)
-
-addEventHandler("onClientResourceStop", root, function(res)
-    if elements_resources[res] and isElement(Browser) then
-        for _, element in ipairs(elements_resources[res]) do 
-            if browsers[element] and isElement(element) then 
-                executeBrowserJavascript(Browser, "document.getElementById('"..browsers[element].id.."').remove();")
-                browsers[element] = nil
-            end   
-        end 
-    end 
-end)
-
-
-
-addEventHandler("onClientResourceStart", resourceRoot, Constructor)
