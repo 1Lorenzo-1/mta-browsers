@@ -66,7 +66,7 @@ local function Constructor()
         injectBrowserMouseMove(Browser, absoluteX, absoluteY)
     end, false)
 
-    addEventHandler("better-browsers:loaded", root, function(id)
+    addEventHandler("better-browsers:loaded", Browser, function(id)
         for element, loaded in pairs(browsers) do 
             if tonumber(loaded.id) == tonumber(id) then 
                 if isElement(element) then 
@@ -77,20 +77,11 @@ local function Constructor()
         end 
     end)
 
-    addEventHandler("better-browsers:page-loaded", root, function()
+    addEventHandler("better-browsers:page-loaded", Browser, function()
         browserLoaded = true
     
         for id, js in pairs(toLoadBrowsers) do 
             executeBrowserJavascript(Browser, js)
-    
-            for element, loaded in pairs(browsers) do 
-                if tonumber(loaded.id) == tonumber(id) then 
-                    if isElement(element) then 
-                        triggerEvent("onBrowserLoad", element)
-                    end 
-                    break
-                end 
-            end 
         end 
         toLoadBrowsers  = {}
     end)
