@@ -2,6 +2,9 @@
     <info author="1Lorenzo" version="1.0.4" name="BetterBrowser" description="1 Browser is enough to manage all your browsers!" type="script" />
     
     <script src="Browsers.lua" type="client" />
+    
+    <script src="test/Test.lua" type="client" />
+    <file src="test/index.html" type="client" />
 
     <export function='createBrowser' type='client' />
     <export function='focusBrowser' type='client' />
