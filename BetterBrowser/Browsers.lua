@@ -9,8 +9,11 @@
 ]]
 
 addEvent("better-browsers:loaded", true)
+addEvent("better-browsers:page-loaded", true)
 addEvent("onBrowserLoad", true)
 
+
+local browserLoaded = false 
 local screen = Vector2(guiGetScreenSize())
 local Browser
 local browsersCounts = 0
@@ -18,6 +21,7 @@ local browsers = {}
 local elements_resources = {} 
 local dxBrowser = createBrowser
 local MTAFocus = focusBrowser
+local toLoadBrowsers = {}
 
 function Constructor()
     Browser = dxBrowser(screen.x,screen.y,true,true)
@@ -32,6 +36,7 @@ function Constructor()
             document.addEventListener("DOMContentLoaded", function() {
                 document.body.innerHTML = "";
                 document.body.style.overflow = "hidden";   
+                mta.triggerEvent("better-browsers:page-loaded")
             });      
         ]]);
         MTAFocus(Browser)
@@ -70,6 +75,24 @@ function Constructor()
                 break
             end 
         end 
+    end)
+
+    addEventHandler("better-browsers:page-loaded", root,function ()
+        browserLoaded = true
+    
+        for id, js in pairs(toLoadBrowsers) do 
+            executeBrowserJavascript(Browser, js)
+    
+            for element, loaded in pairs(browsers) do 
+                if tonumber(loaded.id) == tonumber(id) then 
+                    if isElement(element) then 
+                        triggerEvent("onBrowserLoad", element)
+                    end 
+                    break
+                end 
+            end 
+        end 
+        toLoadBrowsers  = {}
     end)
 end
 
@@ -201,7 +224,12 @@ function loadBrowserFiles(theBrowser, files)
         document.body.appendChild(iframe);
     ]]
 
-    executeBrowserJavascript(Browser, jsCode)
+    if browserLoaded then 
+        executeBrowserJavascript(Browser, jsCode)
+    else 
+        toLoadBrowsers[id] = jsCode
+    end 
+
     toLoad = {}
     return true 
 end 
@@ -238,5 +266,7 @@ addEventHandler("onClientResourceStop", root, function(res)
         end 
     end 
 end)
+
+
 
 addEventHandler("onClientResourceStart", resourceRoot, Constructor)
