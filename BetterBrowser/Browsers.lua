@@ -8,9 +8,9 @@
  https://github.com/1Lorenzo-1/mta-browsers
 ]]
 
-addEvent("better-browsers:loaded", true)
-addEvent("better-browsers:page-loaded", true)
-addEvent("onBrowserLoad", true)
+addEvent("better-browsers:loaded", false)
+addEvent("better-browsers:page-loaded", false)
+addEvent("onBrowserLoad", false)
 
 
 local browserLoaded = false 
