@@ -11,6 +11,7 @@
     <export function='setBrowserProperty' type='client' />
     <export function='executeJavascript' type='client' />
     <export function='loadBrowserFiles' type='client' />
+    <export function='toggleDevTools' type='client' />
 
     <download_priority_group>99999</download_priority_group>
 </meta>

@@ -274,3 +274,13 @@ function executeJavascript(theBrowser, js)
         ]])    
     end 
 end 
+
+function toggleDevTools(bool)
+    assert(type(bool)=="boolean", "Bad argument 2 @ toggleDevTools (boolean expected, got " .. type(bool) .. ")")
+
+    if not getDevelopmentMode( ) then 
+        return false
+    end
+
+    return toggleBrowserDevTools(Browser, bool)
+end
